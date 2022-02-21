@@ -70,7 +70,6 @@ namespace mdDiLeuRatioParser
             }
             return result; 
         }
-
     }
 
     public static class ModificationsExtensions
@@ -110,6 +109,7 @@ namespace mdDiLeuRatioParser
             }
             return modDict1;
         }
+
         public static bool ModificationIsLabel(string modification)
         {
             bool modIsLabel = false;

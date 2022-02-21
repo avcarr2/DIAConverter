@@ -49,7 +49,7 @@ namespace mdDiLeuRatioParser
                 // if no match, skip to the next peak within a window. 
         // create peak ratio object
         // calculate the actual ratio
-        public static GetQuantifiedPeaksFromRTWindow(DataTable dt, RetentionTimeWindow rtw)
+        public static void GetQuantifiedPeaksFromRTWindow(DataTable dt, RetentionTimeWindow rtw)
         {
 
         }
