@@ -7,53 +7,47 @@ namespace mdDiLeuRatioParser
 {
     public class ModificationClass
     {
-        public Dictionary<int, string> ModificationDict = new();
+        public Dictionary<int, string> ModificationDict { get; private set; }
 
         public ModificationClass(string fullSeq)
-        {            
+        {
+            ModificationDict = new Dictionary<int, string>(); 
             ParseModifications(fullSeq); 
         }
+        public ModificationClass()
+		{
+            ModificationDict = new Dictionary<int, string>();
+        }
         public ModificationClass(DataRow dataRow)
-        { 
+        {
+            ModificationDict = new Dictionary<int, string>();
             string fullSeq = dataRow.Field<string>("Full Sequence");
             ParseModifications(fullSeq); 
         }
         public void ParseModifications(string fullSeq)
         {
             // use a regex to get all modifications
-            string pattern = @"[.*]";
-            Regex regex = new(pattern);
+            string pattern = @"\[(.+?)\]"; 
 
+            Regex regex = new(pattern);
 
             // remove each match after adding to the dict. Otherwise, getting positions
             // of the modifications will be rather difficult.
             int patternMatches = regex.Matches(fullSeq).Count;
-            string iteratedThroughString = "";
-            for (int i = 0; i < patternMatches; i++)
-            {
-                // Modification is only the left side of the first amino acid, i.e. position 0. 
-                // Otherwise, the modification is on the right side of the amino acid, i.e. amino acid is at regex position - 1. 
-                if(i == 0)
-                {
-                    Match modification = regex.Match(fullSeq);
-                    if (modification.Index == 0)
-                    {
-                        int position = 0;
-                        ModificationDict.Add(position, modification.Value);
-                        // .Result("") replaces the Match with "" and assigns it to the iteratedThroughString 
-                        iteratedThroughString = modification.Result("");
-                        // continue to the next iteration. I assume this will save some time.
-                        continue; 
-                    }
-                }
-                else
-                {
-                    Match modification = regex.Match(iteratedThroughString);
-                    int position = modification.Index - 1;
-                    ModificationDict.Add(position, modification.Value);
-                    // remove the modification from the string
-                    iteratedThroughString = modification.Result(""); 
-                }
+
+            MatchCollection matches = regex.Matches(fullSeq);
+            int currentPosition = 0; 
+            foreach(Match match in matches)
+			{
+
+                GroupCollection group = match.Groups;
+                string val = group[1].Value;
+                int startIndex = group[0].Index;
+                int captureLength = group[0].Length; 
+                int position = group["(.+?)"].Index; 
+
+                ModificationDict.Add(startIndex - currentPosition, val);
+                currentPosition += startIndex + captureLength;
             }
         }
 

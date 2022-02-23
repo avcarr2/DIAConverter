@@ -5,7 +5,7 @@ using System.Data;
 using System.Linq; 
 namespace mdDiLeuRatioParser
 {
-    public enum LabelTypes {Light, Medium, Heavy, Unlabeled}
+    public enum LabelTypes {Light, Medium, Heavy, Unassigned}
 
     public class QuantifiedPeak
     {
@@ -27,23 +27,44 @@ namespace mdDiLeuRatioParser
             Modifications = new ModificationClass(dataRow);
             ClassifyAndAssignLabelType(); 
         }
+        public QuantifiedPeak(string baseSeq, string fullSeq, double retTime, double intensity)
+		{
+            BaseSequence = baseSeq;
+            FullSequence = fullSeq;
+            RetentionTime = retTime;
+            Intensity = intensity;
+            Modifications = new ModificationClass(fullSeq);
+            ClassifyAndAssignLabelType(); 
+		}
+        public QuantifiedPeak()
+		{
+
+		}
+        public QuantifiedPeak((string, string, double, double) tupleParams)
+		{
+            BaseSequence = tupleParams.Item1;
+            FullSequence = tupleParams.Item2;
+            RetentionTime = tupleParams.Item3;
+            Intensity = tupleParams.Item4;
+            Modifications = new ModificationClass(tupleParams.Item2);
+            ClassifyAndAssignLabelType(); 
+        }
+        // public QuantifiedPeak(string baseSequence, string fullSequence, double retentionTime, double intensity, ModificationClass)
         public void ClassifyAndAssignLabelType()
         {
-            List<string> labels = new();
-            Modifications.ModificationDict.Values.ToList().ForEach(i =>
-            {
-                
-                if (ModificationIsLabel(i))
-                {
-                    labels.Add(i); 
-                }
-            });
-            if (labels.Any())
-            {
-                AssignModificationLabelType(labels[0]);
-            }
+            LabelType = LabelTypes.Unassigned; 
+
+            foreach(string mod in Modifications.ModificationDict.Values)
+			{
+				if (ModificationIsLabel(mod))
+				{
+                    AssignModificationLabelType(mod);
+                    break; 
+				}
+			}
+         
         }
-        
+
         public bool ModificationIsLabel(string modification)
         {
             bool modIsLabel = false; 
@@ -53,7 +74,7 @@ namespace mdDiLeuRatioParser
             bool success = labels.LabelDict.ContainsKey(modification);
             if (!success)
             {
-                lt = LabelTypes.Unlabeled;
+                lt = LabelTypes.Unassigned;
                 modIsLabel = false; 
             }
             else
@@ -67,17 +88,41 @@ namespace mdDiLeuRatioParser
             
             LabelDictionary labels = new LabelDictionary();
             LabelTypes lt = new();
-            
+
             bool success = labels.LabelDict.TryGetValue(modification, out lt);
             if (!success)
             {
-                LabelType = LabelTypes.Unlabeled;
+                LabelType = LabelTypes.Unassigned;
             }
             else
             {
                 LabelType = lt; 
             }
         }
+        public bool ModificationsEqual(Dictionary<int, string> modDict2)
+        {
+            bool isEqual = false;
+            // iterate through dictionaries and convert the label modification to just "label"
+            if (Modifications.ModificationDict.Count == modDict2.Count)
+            {
+                var dict1 = Modifications.ModificationDict.ReplaceLabelStringWithLabel();
+                var dict2 = modDict2.ReplaceLabelStringWithLabel();
+                isEqual = dict1.Count == dict2.Count && !dict1.Except(dict2).Any();
+            }
+            return isEqual;
+        }
+        public bool ModificationsEqual(QuantifiedPeak qp)
+		{
+            bool isEqual = false; 
+            if(Modifications.ModificationDict.Count == qp.Modifications.ModificationDict.Count)
+			{
+                var dict1 = Modifications.ModificationDict.ReplaceLabelStringWithLabel();
+                var dict2 = qp.Modifications.ModificationDict.ReplaceLabelStringWithLabel();
+                isEqual = dict1.Count == dict2.Count && !dict1.Except(dict2).Any();
+            }
+            return isEqual; 
+		}
+
 
     }
 }

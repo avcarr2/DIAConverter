@@ -12,7 +12,7 @@ namespace mdDiLeuRatioParser
     {
         public static bool CheckModificationsAreEquivalent(this QuantifiedPeak qpeak, QuantifiedPeak quantifiedPeak)
         {
-            return qpeak.CheckModificationsAreEquivalent(quantifiedPeak);
+            return qpeak.ModificationsEqual(quantifiedPeak);
         }
         public static bool BaseSequencesAreEqual(this QuantifiedPeak qPeak, QuantifiedPeak quantifiedPeak)
         {
@@ -64,13 +64,13 @@ namespace mdDiLeuRatioParser
             return results;
         }
 
-        private static bool Ratio801Over261(QuantifiedPeak qp)
+        public static bool Ratio801Over261(QuantifiedPeak qp)
         {
-            return qp.LabelType == LabelTypes.Heavy | qp.LabelType == LabelTypes.Medium;
+            return ((int)qp.LabelType == (int)LabelTypes.Heavy | (int)qp.LabelType == (int)LabelTypes.Medium);
         }
-        private static bool Ratio090Over261(QuantifiedPeak qp)
+        public static bool Ratio090Over261(QuantifiedPeak qp)
         {
-            return qp.LabelType == LabelTypes.Light | qp.LabelType == LabelTypes.Medium;
+            return ( (int)qp.LabelType == (int)LabelTypes.Light | (int)qp.LabelType == (int)LabelTypes.Medium);
         }
         public static Dictionary<string, Dictionary<string, double>> CalculateRatio(this Dictionary<string, List<QuantifiedPeak>> filteredDict)
         {
@@ -80,22 +80,21 @@ namespace mdDiLeuRatioParser
 
             foreach (var baseSequence in filteredDict.Keys)
             {
-                var ratio1 = filteredDict[baseSequence].FindAll(Ratio090Over261);
-                var ratio2 = filteredDict[baseSequence].FindAll(Ratio801Over261);
-                var ratioOutput1 = CalculateRatiosFromList(ratio1, LabelTypes.Heavy, LabelTypes.Medium);
-                var ratioOutput2 = CalculateRatiosFromList(ratio2, LabelTypes.Light, LabelTypes.Medium);
 
-                resultsDict.Add(baseSequence, ratioOutput1.Concat(ratioOutput2).ToDictionary(key => key.Key, val => val.Value));
+                var ratioOutput1 = CalculateRatiosFromList(filteredDict[baseSequence], LabelTypes.Heavy, LabelTypes.Medium);
+                var ratioOutput2 = CalculateRatiosFromList(filteredDict[baseSequence], LabelTypes.Light, LabelTypes.Medium);
+                var tempOutput = ratioOutput1.Concat(ratioOutput2).ToDictionary(key => key.Key, val => val.Value);
+                resultsDict.Add(baseSequence, tempOutput); 
             }
             return resultsDict;
         }
         // use .FindAll() to get all base sequences across the whole thing, then keep using FindAll to get those within a certain retention time, and those with matching modifications. 
         // it'll probably be a lot cleaner than what you've already written. 
 
-        private static Dictionary<string, double> CalculateRatiosFromList(List<QuantifiedPeak> qpList, LabelTypes lab1, LabelTypes lab2)
+        public static Dictionary<string, double> CalculateRatiosFromList(List<QuantifiedPeak> qpList, LabelTypes lab1, LabelTypes lab2)
         {
-            var labelType1 = qpList.Where(i => i.LabelType == lab1).ToList();
-            var labelType2 = qpList.Where(i => i.LabelType == lab2).ToList();
+            var labelType1 = qpList.Where(i => (int)i.LabelType == (int)lab1).Select(i=>i).ToList();
+            var labelType2 = qpList.Where(i => (int)i.LabelType == (int)lab2).Select(i=>i).ToList();
 
             Dictionary<string, double> ratioDict = new();
 
@@ -105,7 +104,7 @@ namespace mdDiLeuRatioParser
                 {
                     if (!labelType1[i].CheckModificationsAreEquivalent(labelType2[j]))
                     {
-                        break;
+                        continue;
                     }
                     else
                     {

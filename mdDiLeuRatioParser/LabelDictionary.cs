@@ -13,7 +13,7 @@ namespace mdDiLeuRatioParser
         {
             LabelDict = new Dictionary<string, LabelTypes>(); 
             string lightLabelString = "Light Label:mdDL 801 on X";
-            string heavyLabelString = "Heavy Lable:mdDL 090 on X";
+            string heavyLabelString = "Heavy Label:mdDL 090 on X";
             string medLabelString = "Med Label:mdDL 261 on X";
 
             LabelDict.Add(lightLabelString, LabelTypes.Light);

@@ -6,11 +6,17 @@ using System.Linq;
 
 namespace mdDiLeuRatioParser
 {
-    class Program
+    public class Program
     {
-        static void Main(string[] args)
+        public static void Main(string[] args)
         {
-            string path = Path.Combine("Data", "AllQuantifiedPeaks.tsv");
+            // TODO: Refactor to account for it being wrapped by a GUI now
+
+            // args[0] = file path
+            // args[1] = output file path
+            string path = args[0];
+            string outputFilePath = args[1];
+
             DataTable psms = FilePreprocessing.ReadPSMTVFile(path).AsEnumerable().OrderBy(i => i.Field<double>("Retention Time")).CopyToDataTable();
             double minRetentionTime = psms.AsEnumerable().Select(i => i.Field<double>("Retention Time")).Min();
             double maxRetentionTime = psms.AsEnumerable().Select(i => i.Field<double>("Retention Time")).Max();
@@ -32,17 +38,26 @@ namespace mdDiLeuRatioParser
                 seqDictionary.Add(baseSeq, qPeaks.Where(i => i.BaseSequence == baseSeq).ToList());  
 			}
 
-            Dictionary<string, Dictionary<string, double>> ratioResults = seqDictionary.CalculateRatio(); 
-
-
+            Dictionary<string, Dictionary<string, double>> ratioResults = seqDictionary.CalculateRatio();
+            ratioResults.PrintRatioResultsToTextFile(outputFilePath); 
         }
     }
 
     public static class ProgramHelpers
     {
-        public static void PrintRatioResultsToTextFile(this Dictionary<string, Dictionary<string, double>> ratioResults)
+        public static void PrintRatioResultsToTextFile(this Dictionary<string, Dictionary<string, double>> ratioResults, string filePath)
 		{
-
+            using (TextWriter writer = new StreamWriter(filePath))
+			{
+                foreach(var baseSeq in ratioResults.Keys)
+				{
+                    foreach(var ratio in ratioResults[baseSeq])
+					{
+                        writer.WriteLine("{0}\t{1}\t{2]", baseSeq, ratio.Key, ratio.Value.ToString()); 
+					}
+				}
+                writer.Flush(); 
+			}
 		}
         public static void SetPrimaryKey(this DataTable dt, string[] primaryKeys)
 		{
