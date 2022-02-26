@@ -2,7 +2,8 @@
 using System.Data;
 using System.IO;
 using System.Collections.Generic;
-using System.Linq; 
+using System.Linq;
+using System.Text.RegularExpressions; 
 
 namespace mdDiLeuRatioParser
 {
@@ -26,6 +27,45 @@ namespace mdDiLeuRatioParser
             }
             return data;             
         }
+        public static DataTable CorrectColumnType(this DataTable dt)
+		{
+            DataTable clonedResultsDT = new();
+            var colNames = dt.GetColumnNames();
+            Regex regex = new Regex(@"[^0-9.]");
+            Regex emptyRegex = new Regex(@"^$"); 
+            colNames.ForEach(name =>
+            {
+
+                // create columns with matching names of the original dataTable.
+                clonedResultsDT.Columns.Add(name);
+
+                // test whether or not the values from the field contains an alphabetical character. 
+                var testString = dt.AsEnumerable().Select(j => j.Field<string>(name)).Take(1).ToList().ElementAt(0);
+
+                // if it contains an alphabetical character, it cannot be cast to a double. 
+                // if it is a column of blanks, then it automatically becomes a string column. 
+				if (emptyRegex.IsMatch(testString) | regex.IsMatch(testString))
+				{
+                    clonedResultsDT.Columns[name].DataType = typeof(string);
+				}
+				else
+				{
+                    clonedResultsDT.Columns[name].DataType = typeof(double);
+                }
+            }); 
+            foreach(DataRow row in dt.AsEnumerable())
+			{
+                // If clause and valIsNumber bool is to protect from situation where the Peak intensity column is zero, 
+                // resulting in dashes ("-") in the peak description columns (start, apex, end). 
+                // Additionally, the peak intensity values must be greater than zero. 
+                bool valIsNumber = double.TryParse(row.Field<string>("Peak intensity"), out double tempVal); 
+                if(valIsNumber && tempVal > 0)
+				{
+                    clonedResultsDT.ImportRow(row);
+                }
+            }
+            return clonedResultsDT; 
+		}
 
         static IEnumerable<string> ReadAsLines(string path)
         {

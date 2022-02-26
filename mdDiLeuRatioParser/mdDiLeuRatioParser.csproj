@@ -16,8 +16,12 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Data\" />
+    <Folder Include="DataFiles\" />
   </ItemGroup>
   <ItemGroup>
+    <None Update="DataFiles\AllQuantifiedPeaks.tsv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="Data\AllQuantifiedPeaks.tsv">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

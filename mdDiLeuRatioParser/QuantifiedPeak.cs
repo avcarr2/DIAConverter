@@ -20,10 +20,10 @@ namespace mdDiLeuRatioParser
 
         public QuantifiedPeak(DataRow dataRow)
         {
-            BaseSequence = dataRow.Field<string>("BaseSequence");
-            FullSequence = dataRow.Field<string>("FullSequence");
+            BaseSequence = dataRow.Field<string>("Base Sequence");
+            FullSequence = dataRow.Field<string>("Full Sequence");
             RetentionTime = dataRow.Field<double>("MS2 Retention Time");
-            Intensity = dataRow.Field<double>("Peak Intensity");
+            Intensity = dataRow.Field<double>("Peak intensity");
             Modifications = new ModificationClass(dataRow);
             ClassifyAndAssignLabelType(); 
         }

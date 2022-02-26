@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "mdDiLeuRatioParser": {
+      "commandName": "Project",
+      "commandLineArgs": "\"DataFiles/AllQuantifiedPeaks.tsv\" \"DataFiles\""
+    }
+  }
+}

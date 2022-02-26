@@ -1,7 +1,11 @@
 using NUnit.Framework;
 using System.Linq;
 using mdDiLeuRatioParser;
-using System.Collections.Generic; 
+using System.Collections.Generic;
+using System.Data;
+using System.IO;
+using NUnit;
+using System.Text.RegularExpressions; 
 
 namespace mdDiLeuRatioParserTests
 {
@@ -10,6 +14,7 @@ namespace mdDiLeuRatioParserTests
 		[SetUp]
 		public void Setup()
 		{
+
 		}
 
 		[Test]
@@ -113,7 +118,7 @@ namespace mdDiLeuRatioParserTests
 			QuantifiedPeak labelledLight = new QuantifiedPeak("PEPTIDE", "[Light Label:mdDL 801 on X]PEPTIDE", 25, 250000);
 			Assert.IsTrue(pep1.CheckModificationsAreEquivalent(pep2));
 			Assert.IsFalse(pep1.CheckModificationsAreEquivalent(pep3));
-			Assert.IsFalse(labelledHeavy.CheckModificationsAreEquivalent(labelledLight)); 
+			Assert.IsTrue(labelledHeavy.CheckModificationsAreEquivalent(labelledLight)); 
 		}
 
 		[Test]
@@ -174,6 +179,90 @@ namespace mdDiLeuRatioParserTests
 			Assert.AreEqual(expectedCount, modClassTest.ModificationDict.Count);
 			Assert.AreEqual(position, modClassTest.ModificationDict.Keys.ToArray());
 			Assert.AreEqual(expectedMods, modClassTest.ModificationDict.Values.ToArray()); 
+		}
+		[Test]
+		public void TestImportTSVFile()
+		{
+			string path = Path.Combine(TestContext.CurrentContext.TestDirectory, "DataFiles", "AllQuantifiedPeaks.tsv");
+			DataTable dt = FilePreprocessing.ReadPSMTVFile(path);
+			DataTable newTable = FilePreprocessing.CorrectColumnType(dt);
+
+			string[] correctClassTypesForFirstFiveColumns = { "System.String", "System.String", "System.String", "System.String", "System.Double" };
+			string[] dataTableFirstFiveClassTypes = new string[5]; 
+
+			for(int i = 0; i < dataTableFirstFiveClassTypes.Length; i++)
+			{
+				dataTableFirstFiveClassTypes[i] = newTable.Columns[i].DataType.ToString(); 
+			}
+
+
+			string originalFirstRow = string.Join(", ", dt.Rows[0].ItemArray);
+			string copiedFirstRow = string.Join(", ", newTable.Rows[0].ItemArray);
+
+			Assert.AreEqual(correctClassTypesForFirstFiveColumns, dataTableFirstFiveClassTypes);
+			Assert.AreEqual(originalFirstRow, copiedFirstRow); 
+
+		}
+		[Test]
+		[TestCase("<mdDL_1109_111-calib>", true)]
+		[TestCase(@"<mdDL_1109_111-calib>", true)]
+		[TestCase(@"1174.742169", false)]
+		public void TestRegex(string testString, bool truthValue)
+		{
+			Regex regex = new Regex(@"[^0-9.]"); 
+			Assert.AreEqual(truthValue, regex.IsMatch(testString)); 
+		}
+		[Test]
+		[TestCase(@"1174.742169", true)]
+		[TestCase("-", false)]
+		public void TestTryParse(string val, bool truthValue)
+		{
+			bool exptlTruthValue = double.TryParse(val, out double retVal);
+			Assert.AreEqual(truthValue, exptlTruthValue); 
+			
+		}
+
+
+		[Test]
+		public void TestPrintRatioResultsToTextFile()
+		{
+			string outputPath = Path.Combine(TestContext.CurrentContext.WorkDirectory, "DataFiles", "mdDiLeuTestResults1.tsv");
+
+			Dictionary<string, double> subDictionary = new();
+			subDictionary.Add("test string", 11.53157);
+			subDictionary.Add("test string2", 12.9874654);
+
+			Dictionary<string, Dictionary<string, double>> fullDictionary = new();
+			fullDictionary.Add("base sequence", subDictionary); // full dictionary is correctly initialized
+			fullDictionary.Add("base sequence2", subDictionary);
+			fullDictionary.PrintRatioResultsToTextFile(outputPath); 
+
+		}
+		[Test]
+		public void TestFileWriting()
+		{
+			string outputPath = Path.Combine(TestContext.CurrentContext.WorkDirectory, "DataFiles", "mdDiLeuTestResults2.tsv");
+
+			Dictionary<string, double> subDictionary = new();
+			subDictionary.Add("test string", 11.53157);
+			subDictionary.Add("test string2", 12.9874654); 
+
+			Dictionary<string, Dictionary<string, double>> fullDictionary = new();
+			fullDictionary.Add("base sequence", subDictionary); // full dictionary is correctly initialized
+			fullDictionary.Add("base sequence2", subDictionary);
+
+			using (TextWriter writer = new StreamWriter(outputPath))
+			{
+				foreach(var baseSeq in fullDictionary.Keys)
+				{
+					foreach(var fullDictVals in fullDictionary[baseSeq])
+					{
+						writer.WriteLine("{0}\t{1}\t{2}", baseSeq, fullDictVals.Key.ToString(), fullDictVals.Value.ToString()); 
+					}
+				}
+			}
+
+
 		}
 	}
 }

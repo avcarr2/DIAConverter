@@ -17,14 +17,10 @@ namespace mdDiLeuRatioParser
             string path = args[0];
             string outputFilePath = args[1];
 
-            DataTable psms = FilePreprocessing.ReadPSMTVFile(path).AsEnumerable().OrderBy(i => i.Field<double>("Retention Time")).CopyToDataTable();
-            double minRetentionTime = psms.AsEnumerable().Select(i => i.Field<double>("Retention Time")).Min();
-            double maxRetentionTime = psms.AsEnumerable().Select(i => i.Field<double>("Retention Time")).Max();
+            DataTable psms = FilePreprocessing.ReadPSMTVFile(path).CorrectColumnType();
 
             // get unique base sequences: 
             List<string> baseSequences = psms.AsEnumerable().Select(i => i.Field<string>("Base Sequence")).Distinct().ToList(); 
-
-            psms.AsEnumerable().OrderBy(i => i.Field<double>("Retention Time"));
 
             List<QuantifiedPeak> qPeaks = new(); 
             foreach(DataRow row in psms.Rows)
@@ -39,7 +35,7 @@ namespace mdDiLeuRatioParser
 			}
 
             Dictionary<string, Dictionary<string, double>> ratioResults = seqDictionary.CalculateRatio();
-            ratioResults.PrintRatioResultsToTextFile(outputFilePath); 
+            ratioResults.PrintRatioResultsToTextFile(Path.Combine(outputFilePath, "mdDiLeuRatiosOutput.tsv")); 
         }
     }
 
@@ -49,11 +45,12 @@ namespace mdDiLeuRatioParser
 		{
             using (TextWriter writer = new StreamWriter(filePath))
 			{
+                writer.WriteLine(string.Join("\t", "Base Sequence", "Full Sequence", "Label1", "Label2", "Retention Time", "Intensity Ratio")); 
                 foreach(var baseSeq in ratioResults.Keys)
 				{
                     foreach(var ratio in ratioResults[baseSeq])
 					{
-                        writer.WriteLine("{0}\t{1}\t{2]", baseSeq, ratio.Key, ratio.Value.ToString()); 
+                        writer.WriteLine("{0}\t{1}\t", ratio.Key.ToString(), ratio.Value.ToString());  
 					}
 				}
                 writer.Flush(); 

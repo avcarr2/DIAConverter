@@ -80,11 +80,18 @@ namespace mdDiLeuRatioParser
 
             foreach (var baseSequence in filteredDict.Keys)
             {
+				try
+				{
 
-                var ratioOutput1 = CalculateRatiosFromList(filteredDict[baseSequence], LabelTypes.Heavy, LabelTypes.Medium);
-                var ratioOutput2 = CalculateRatiosFromList(filteredDict[baseSequence], LabelTypes.Light, LabelTypes.Medium);
-                var tempOutput = ratioOutput1.Concat(ratioOutput2).ToDictionary(key => key.Key, val => val.Value);
-                resultsDict.Add(baseSequence, tempOutput); 
+                    var ratioOutput1 = CalculateRatiosFromList(filteredDict[baseSequence], LabelTypes.Heavy, LabelTypes.Medium);
+                    var ratioOutput2 = CalculateRatiosFromList(filteredDict[baseSequence], LabelTypes.Light, LabelTypes.Medium);
+                    var tempOutput = ratioOutput1.Concat(ratioOutput2).ToDictionary(key => key.Key, val => val.Value);
+                    resultsDict.Add(baseSequence, tempOutput);
+                }
+				catch (Exception)
+				{
+                    continue; 
+				}
             }
             return resultsDict;
         }
@@ -98,21 +105,44 @@ namespace mdDiLeuRatioParser
 
             Dictionary<string, double> ratioDict = new();
 
-            for (int i = 0; i < labelType1.Count; i++)
-            {
-                for (int j = 0; j < labelType2.Count; j++)
+            foreach(QuantifiedPeak quantifiedPeak in labelType1)
+			{
+                var matchedPeak = labelType2.FindAll(delegate (QuantifiedPeak quantifiedPeak2)
                 {
-                    if (!labelType1[i].CheckModificationsAreEquivalent(labelType2[j]))
+                    return quantifiedPeak2.CheckModificationsAreEquivalent(quantifiedPeak) & quantifiedPeak2.QuantifiedPeakIsInRetentionTimeWindow(quantifiedPeak, 1);
+                });
+
+                try
+				{
+                    if (matchedPeak.Count > 1)
                     {
-                        continue;
+                        throw new InvalidOperationException("Multiple potentially quantifiable peaks detected. Returning ratio calculated with first matched peak.");
                     }
-                    else
+                }
+				catch (Exception)
+				{
+
+				}
+
+                if(matchedPeak.Count > 0)
+				{
+                    try
                     {
-                        double ratio = labelType1[i].Intensity / labelType2[j].Intensity;
-                        string ratioName = String.Join("\t", labelType1[i].BaseSequence.ToString(), labelType1[i].FullSequence.ToString(),
-                            "Label1: " + labelType1[i].LabelType.ToString(), "Label2: " + labelType2[j].LabelType.ToString());
-                        ratioDict.Add(ratioName, ratio);
+                        if (matchedPeak.Count > 1)
+                        {
+                            throw new InvalidOperationException("Multiple potentially quantifiable peaks detected. Returning ratio calculated with first matched peak.");
+                        }
                     }
+                    catch (Exception)
+                    {
+                        return null;
+                    }
+
+                    double intensityRatio = quantifiedPeak.Intensity / matchedPeak.ElementAt(0).Intensity;
+                    // order of string is Base Sequence, Full Sequence, Label1, Label2, Retention Time, Intensity Ratio
+                    string ratioName = String.Join("\t", quantifiedPeak.BaseSequence.ToString(), quantifiedPeak.FullSequence.ToString(),
+                        quantifiedPeak.LabelType.ToString(), matchedPeak.ElementAt(0).LabelType.ToString(), quantifiedPeak.RetentionTime);
+                    ratioDict.Add(ratioName, intensityRatio);
                 }
             }
             return ratioDict;
@@ -124,5 +154,13 @@ namespace mdDiLeuRatioParser
             // accumulate the base sequences in a separate list. 
 
         }
+        // this function is used to guard for peaks recorded outside their retention time window. 
+        public static bool QuantifiedPeakIsInRetentionTimeWindow(this QuantifiedPeak qp, QuantifiedPeak qp2, double retentionTimeWindowInMinutes)
+		{
+            double halfWindow = retentionTimeWindowInMinutes / 2;
+            return qp2.RetentionTime < qp.RetentionTime + halfWindow & qp2.RetentionTime > qp.RetentionTime - halfWindow; 
+
+
+		}
     }
 }

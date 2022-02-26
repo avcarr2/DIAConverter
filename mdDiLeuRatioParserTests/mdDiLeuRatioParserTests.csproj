@@ -17,4 +17,13 @@
     <ProjectReference Include="..\mdDiLeuRatioParser\mdDiLeuRatioParser.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="AllQuantifiedPeaks.tsv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="DataFiles\AllQuantifiedPeaks.tsv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>
