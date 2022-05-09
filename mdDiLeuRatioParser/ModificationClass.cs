@@ -33,22 +33,48 @@ namespace mdDiLeuRatioParser
 
             // remove each match after adding to the dict. Otherwise, getting positions
             // of the modifications will be rather difficult.
-            int patternMatches = regex.Matches(fullSeq).Count;
+            //int patternMatches = regex.Matches(fullSeq).Count;
 
+            RemoveSpecialCharacters(ref fullSeq); 
             MatchCollection matches = regex.Matches(fullSeq);
             int currentPosition = 0; 
             foreach(Match match in matches)
 			{
-
                 GroupCollection group = match.Groups;
                 string val = group[1].Value;
                 int startIndex = group[0].Index;
                 int captureLength = group[0].Length; 
-                int position = group["(.+?)"].Index; 
+                int position = group["(.+?)"].Index;
 
-                ModificationDict.Add(startIndex - currentPosition, val);
+                // check to see if key already exist
+                // if there is a missed cleavage, then there will be a label on K and a Label on X modification. 
+                // And, it'll be like [label]|[label] which complicates the positional stuff a little bit. 
+                // if the already key exists, update the current position with the capture length + 1. 
+                // otherwise, add the modification to the dict.
+
+                // int to add is startIndex - current position
+                int positionToAddToDict = startIndex - currentPosition; 
+                if(ModificationDict.ContainsKey(positionToAddToDict))
+                {
+                    currentPosition += startIndex + captureLength;
+                    continue; 
+                }
+                ModificationDict.Add(positionToAddToDict, val);
                 currentPosition += startIndex + captureLength;
             }
+        }
+        /// <summary>
+        /// Fixes an issue where the | appears and throws off the numbering if there are multiple mods on a single amino acid. 
+        /// </summary>
+        /// <param name="fullSeq"></param>
+        /// <param name="replacement"></param>
+        /// <param name="specialCharacter"></param>
+        /// <returns></returns>
+        public void RemoveSpecialCharacters(ref string fullSeq, string replacement = @"", string specialCharacter = @"\|")
+        {
+            // next regex is used in the event that multiple modifications are on a missed cleavage Lysine (K)
+            Regex regexSpecialChar = new(specialCharacter);
+            fullSeq = regexSpecialChar.Replace(fullSeq, replacement);
         }
 
         public string ConvertLabelString(string modification)
