@@ -5,8 +5,13 @@ using System.Collections.Generic;
 using System.Data;
 using System.IO;
 using NUnit;
-using System.Text.RegularExpressions; 
-
+using System.Text.RegularExpressions;
+using OxyPlot;
+using OxyPlot.Annotations;
+using OxyPlot.Axes;
+using OxyPlot.Series;
+using System.Windows.Threading;
+using System; 
 namespace mdDiLeuRatioParserTests
 {
 	public class Tests
@@ -261,8 +266,62 @@ namespace mdDiLeuRatioParserTests
 					}
 				}
 			}
-
-
 		}
+        [Test]        
+		public void TestBoxPlot()
+        {
+			string filePath = Path.Combine(TestContext.CurrentContext.TestDirectory, "DataFiles", "mdDiLeuRatiosOutput.tsv");
+			PlotModel pm = BoxPlot();
+			PlotModel pm2 = BoxWhiskerPlots.CreateBoxPlot(filePath, LabelTypes.Light, LabelTypes.Heavy); 
+			BoxWhiskerPlots.WritePlotModelToPng(pm, "testBoxPlot.pdf");
+			BoxWhiskerPlots.WritePlotModelToPng(pm2, "mdDiLeuBoxplot.pdf"); 
+        }
+		public static PlotModel BoxPlot()
+		{
+			const int boxes = 10;
+
+			var model = new PlotModel() { Title = string.Format("BoxPlot (n={0})", boxes) };
+
+			var s1 = new BoxPlotSeries
+			{
+				Title = "BoxPlotSeries",
+				BoxWidth = 0.1
+			};
+
+			var random = new Random();
+			for (var i = 0; i < boxes; i++)
+			{
+				double x = i;
+				var points = 5 + random.Next(15);
+				var values = new List<double>();
+				for (var j = 0; j < points; j++)
+				{
+					values.Add(random.Next(0, 20));
+				}
+
+				values.Sort();
+				var median = BoxWhiskerPlots.GetMedian(values);
+				int r = values.Count % 2;
+				double firstQuartil = BoxWhiskerPlots.GetMedian(values.Take((values.Count + r) / 2));
+				double thirdQuartil = BoxWhiskerPlots.GetMedian(values.Skip((values.Count - r) / 2));
+
+				var iqr = thirdQuartil - firstQuartil;
+				var step = iqr * 1.5;
+				var upperWhisker = thirdQuartil + step;
+				upperWhisker = values.Where(v => v <= upperWhisker).Max();
+				var lowerWhisker = firstQuartil - step;
+				lowerWhisker = values.Where(v => v >= lowerWhisker).Min();
+
+				var outliers = values.Where(v => v > upperWhisker || v < lowerWhisker).ToList();
+
+				s1.Items.Add(new BoxPlotItem(x, lowerWhisker, firstQuartil, median, thirdQuartil, upperWhisker));
+			}
+
+			model.Series.Add(s1);
+			model.Axes.Add(new LinearAxis() { Position = AxisPosition.Left});
+			model.Axes.Add(new LinearAxis() { Position = AxisPosition.Bottom, MinimumPadding = 0.1, MaximumPadding = 0.1 });
+			return model;
+		}
+		// write a method to count and plot the number of QuantifiedPeaks with light, medium, and heavy labels. 
 	}
 }

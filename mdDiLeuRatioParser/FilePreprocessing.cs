@@ -27,6 +27,26 @@ namespace mdDiLeuRatioParser
             }
             return data;             
         }
+        public static DataTable ReadTSVFile(string path)
+        {
+            var data = new DataTable();
+            var reader = ReadAsLines(path);
+
+            var headers = reader.First().Split('\t');
+
+            foreach (var header in headers)
+            {
+                data.Columns.Add(header);
+            }
+            var records = reader.Skip(1);
+            foreach (var record in records)
+            {
+                string[] temp = record.Split('\t'); 
+                data.Rows.Add(temp);
+            }
+            return data;
+        }
+
         public static DataTable CorrectColumnType(this DataTable dt)
 		{
             DataTable clonedResultsDT = new();
@@ -66,6 +86,41 @@ namespace mdDiLeuRatioParser
             }
             return clonedResultsDT; 
 		}
+        public static DataTable CorrectRatiosTSVColumns(this DataTable dt)
+        {
+            DataTable clonedResultsDT = new();
+            var colNames = dt.GetColumnNames();
+            Regex regex = new Regex(@"[^0-9.]");
+            Regex emptyRegex = new Regex(@"^$");
+            colNames.ForEach(name =>
+            {
+                // create columns with matching names of the original dataTable.
+                clonedResultsDT.Columns.Add(name);
+
+                // test whether or not the values from the field contains an alphabetical character. 
+                var testString = dt.AsEnumerable().Select(j => j.Field<string>(name)).Take(1).ToList().ElementAt(0);
+
+                // if it contains an alphabetical character, it cannot be cast to a double. 
+                // if it is a column of blanks, then it automatically becomes a string column. 
+                if (emptyRegex.IsMatch(testString) | regex.IsMatch(testString))
+                {
+                    clonedResultsDT.Columns[name].DataType = typeof(string);
+                }
+                else
+                {
+                    clonedResultsDT.Columns[name].DataType = typeof(double);
+                }
+            });
+
+            foreach (DataRow row in dt.AsEnumerable())
+            {
+                // If clause and valIsNumber bool is to protect from situation where the Peak intensity column is zero, 
+                // resulting in dashes ("-") in the peak description columns (start, apex, end). 
+                // Additionally, the peak intensity values must be greater than zero. 
+                clonedResultsDT.ImportRow(row);
+            }
+            return clonedResultsDT; 
+        }
 
         static IEnumerable<string> ReadAsLines(string path)
         {

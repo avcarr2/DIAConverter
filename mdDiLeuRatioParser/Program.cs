@@ -27,15 +27,19 @@ namespace mdDiLeuRatioParser
 			{
                 qPeaks.Add(new QuantifiedPeak(row)); 
 			}
+            (int, int, int) labelCounts = qPeaks.GetLabelCounts();
+            labelCounts.PrintLabelCount("labelCounts.tsv");
 
             Dictionary<string, List<QuantifiedPeak>> seqDictionary = new(); 
             foreach(string baseSeq in baseSequences)
 			{
                 seqDictionary.Add(baseSeq, qPeaks.Where(i => i.BaseSequence == baseSeq).ToList());  
 			}
-
             Dictionary<string, Dictionary<string, double>> ratioResults = seqDictionary.CalculateRatio();
-            ratioResults.PrintRatioResultsToTextFile(Path.Combine(outputFilePath, "mdDiLeuRatiosOutput.tsv")); 
+            string outputPath = "mdDiLeuRatiosOutput.tsv"; 
+            ratioResults.PrintRatioResultsToTextFile(Path.Combine(outputFilePath, outputPath));
+
+            BoxWhiskerPlots.CreateDiLeuBoxPlot(outputPath, LabelTypes.Medium, LabelTypes.Heavy, "DiLeuLabellingBoxPlots.png");
         }
     }
 
@@ -95,6 +99,23 @@ namespace mdDiLeuRatioParser
             {
                 Console.WriteLine(str); 
             }
+        }
+        public static (int, int, int) GetLabelCounts(this List<QuantifiedPeak> qPeaks)
+        {
+            int light; int medium; int heavy; 
+
+            light = qPeaks.Where(i => i.LabelType == LabelTypes.Light).Count();
+            medium = qPeaks.Where(i => i.LabelType == LabelTypes.Medium).Count();
+            heavy = qPeaks.Where(i => i.LabelType == LabelTypes.Heavy).Count();
+
+            return (light, medium, heavy); 
+        }
+        public static void PrintLabelCount(this (int, int, int) labelCounts, string path)
+        {
+            using TextWriter writer = new StreamWriter(path);
+
+            writer.WriteLine("{0}\t{1}\t{2}", labelCounts.Item1, labelCounts.Item2, labelCounts.Item3);
+            writer.Flush(); 
         }
 
         // create .tsv writer to write data directly from the List<string, Dictionary<>> output

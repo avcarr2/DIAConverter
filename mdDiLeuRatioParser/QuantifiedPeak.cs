@@ -64,7 +64,6 @@ namespace mdDiLeuRatioParser
 			}
          
         }
-
         public bool ModificationIsLabel(string modification)
         {
             bool modIsLabel = false; 

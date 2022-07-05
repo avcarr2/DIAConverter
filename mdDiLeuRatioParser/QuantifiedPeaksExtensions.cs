@@ -83,8 +83,8 @@ namespace mdDiLeuRatioParser
 				try
 				{
 
-                    var ratioOutput1 = CalculateRatiosFromList(filteredDict[baseSequence], LabelTypes.Heavy, LabelTypes.Medium);
-                    var ratioOutput2 = CalculateRatiosFromList(filteredDict[baseSequence], LabelTypes.Light, LabelTypes.Medium);
+                    var ratioOutput1 = CalculateRatiosFromList(filteredDict[baseSequence], LabelTypes.Medium, LabelTypes.Light);
+                    var ratioOutput2 = CalculateRatiosFromList(filteredDict[baseSequence], LabelTypes.Heavy, LabelTypes.Light);
                     var tempOutput = ratioOutput1.Concat(ratioOutput2).ToDictionary(key => key.Key, val => val.Value);
                     resultsDict.Add(baseSequence, tempOutput);
                 }
